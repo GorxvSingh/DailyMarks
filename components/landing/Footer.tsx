@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/ui/Logo";
 
 export function Footer() {
   return (
@@ -6,15 +7,21 @@ export function Footer() {
       <div className="mx-auto max-w-content px-6 py-12">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
-            <span className="text-lg font-bold text-white tracking-tighter">
-              Daily<span className="text-accent">Marks</span>
-            </span>
+            <div className="flex items-center gap-2">
+              <Logo size={24} />
+              <span className="text-lg font-bold text-white tracking-tighter">
+                Daily<span className="text-accent">Marks</span>
+              </span>
+            </div>
             <p className="text-sm mt-1">
               Your X bookmarks, delivered to your inbox.
             </p>
           </div>
 
           <div className="flex items-center gap-6 text-sm">
+            <Link href="/pricing" className="hover:text-white transition-colors">
+              Pricing
+            </Link>
             <Link href="/privacy" className="hover:text-white transition-colors">
               Privacy
             </Link>

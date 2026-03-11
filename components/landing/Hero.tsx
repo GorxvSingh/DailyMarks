@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/Button";
 import { AnimateIn } from "@/components/ui/AnimateIn";
 
 export function Hero() {
@@ -27,19 +26,8 @@ export function Hero() {
           </p>
         </AnimateIn>
 
-        <AnimateIn variant="scale" delay={500}>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button href="/api/auth/login">
-              Get started, it&apos;s free
-            </Button>
-            <Button href="#how-it-works" variant="outline">
-              See how it works
-            </Button>
-          </div>
-        </AnimateIn>
-
-        <AnimateIn variant="fade" delay={650}>
-          <p className="mt-6 text-sm text-muted">
+        <AnimateIn variant="fade" delay={500}>
+          <p className="text-sm text-muted">
             Choose 1–20 bookmarks per email. Unsubscribe anytime.
           </p>
         </AnimateIn>

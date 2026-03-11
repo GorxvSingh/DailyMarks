@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Logo } from "@/components/ui/Logo";
 
 interface UserPreferences {
   xUsername: string;
@@ -10,6 +11,8 @@ interface UserPreferences {
   bookmarkCount: number;
   isActive: boolean;
   lastDigestAt: string | null;
+  plan: string;
+  planExpiresAt: string | null;
 }
 
 export default function DashboardPage() {
@@ -68,7 +71,8 @@ export default function DashboardPage() {
       {/* Header */}
       <nav className="w-full border-b border-border/50">
         <div className="mx-auto max-w-content flex items-center justify-between px-6 py-4">
-          <a href="/" className="text-xl font-bold tracking-tighter">
+          <a href="/" className="flex items-center gap-2 text-xl font-bold tracking-tighter">
+            <Logo size={28} />
             Daily<span className="text-accent">Marks</span>
           </a>
           <div className="flex items-center gap-4">
@@ -90,6 +94,43 @@ export default function DashboardPage() {
         <p className="text-muted mb-10">
           Configure how your daily bookmark digest is delivered.
         </p>
+
+        {/* Plan status */}
+        <div className="mb-8 p-4 rounded-lg border border-border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">
+                {prefs.plan === "free" ? "Free plan" : (
+                  <>
+                    {prefs.plan.charAt(0).toUpperCase() + prefs.plan.slice(1)} plan
+                    {prefs.plan === "lifetime" && (
+                      <span className="ml-2 text-xs bg-accent text-white px-2 py-0.5 rounded-full">
+                        Lifetime
+                      </span>
+                    )}
+                  </>
+                )}
+              </p>
+              <p className="text-sm text-muted">
+                {prefs.plan === "free"
+                  ? "Upgrade to unlock up to 20 bookmarks per digest"
+                  : prefs.plan === "lifetime"
+                  ? "You have lifetime access"
+                  : prefs.planExpiresAt
+                  ? `Renews ${new Date(prefs.planExpiresAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
+                  : "Active subscription"}
+              </p>
+            </div>
+            {prefs.plan === "free" && (
+              <a
+                href="/pricing"
+                className="text-sm font-medium text-accent hover:underline"
+              >
+                Upgrade
+              </a>
+            )}
+          </div>
+        </div>
 
         {/* Email */}
         <div className="mb-8">

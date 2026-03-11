@@ -16,11 +16,14 @@ model User {
   accessToken    String
   refreshToken   String
   tokenExpiresAt DateTime
-  bookmarkCount  Int       @default(5)
-  isActive       Boolean   @default(true)
-  lastDigestAt   DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  bookmarkCount    Int       @default(5)
+  isActive         Boolean   @default(true)
+  lastDigestAt     DateTime?
+  stripeCustomerId String?
+  plan             String    @default("free")
+  planExpiresAt    DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 model SentBookmark {

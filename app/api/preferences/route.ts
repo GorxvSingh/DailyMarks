@@ -17,6 +17,8 @@ export async function GET() {
       bookmarkCount: true,
       isActive: true,
       lastDigestAt: true,
+      plan: true,
+      planExpiresAt: true,
     },
   });
 

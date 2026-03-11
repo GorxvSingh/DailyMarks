@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Logo } from "@/components/ui/Logo";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -24,6 +25,7 @@ export function Navbar() {
     >
       <div className="mx-auto max-w-content flex items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-2">
+          <Logo size={28} />
           <span className="text-xl font-bold tracking-tighter">
             Daily<span className="text-accent">Marks</span>
           </span>
@@ -35,6 +37,12 @@ export function Navbar() {
             className="hidden sm:block text-sm text-muted hover:text-foreground transition-colors"
           >
             How it works
+          </Link>
+          <Link
+            href="/pricing"
+            className="hidden sm:block text-sm text-muted hover:text-foreground transition-colors"
+          >
+            Pricing
           </Link>
           <ThemeToggle />
           <Button href="/api/auth/login" size="sm">
