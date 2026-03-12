@@ -55,6 +55,14 @@ export default function PricingPage() {
         return;
       }
 
+      // Server error — show the actual error
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || `Error ${res.status}: Something went wrong`);
+        setLoading(null);
+        return;
+      }
+
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
