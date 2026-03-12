@@ -39,34 +39,58 @@ export async function GET(request: NextRequest) {
 
   try {
     // Exchange code for tokens
-    const tokens = await exchangeCodeForToken(code, codeVerifier);
+    let tokens;
+    try {
+      tokens = await exchangeCodeForToken(code, codeVerifier);
+    } catch (e) {
+      console.error("Token exchange failed:", e);
+      return NextResponse.redirect(`${appUrl}/?error=token_exchange_failed&detail=${encodeURIComponent(String(e))}`);
+    }
 
     // Fetch user profile
-    const xUser = await fetchXUser(tokens.accessToken);
+    let xUser;
+    try {
+      xUser = await fetchXUser(tokens.accessToken);
+    } catch (e) {
+      console.error("Fetch X user failed:", e);
+      return NextResponse.redirect(`${appUrl}/?error=fetch_user_failed`);
+    }
 
     // Encrypt tokens before storing
-    const encryptedAccessToken = encrypt(tokens.accessToken);
-    const encryptedRefreshToken = encrypt(tokens.refreshToken);
+    let encryptedAccessToken, encryptedRefreshToken;
+    try {
+      encryptedAccessToken = encrypt(tokens.accessToken);
+      encryptedRefreshToken = encrypt(tokens.refreshToken);
+    } catch (e) {
+      console.error("Encryption failed:", e);
+      return NextResponse.redirect(`${appUrl}/?error=encryption_failed`);
+    }
 
     // Upsert user in database
-    const user = await prisma.user.upsert({
-      where: { xId: xUser.id },
-      update: {
-        xUsername: xUser.username,
-        xDisplayName: xUser.name,
-        accessToken: encryptedAccessToken,
-        refreshToken: encryptedRefreshToken,
-        tokenExpiresAt: new Date(Date.now() + tokens.expiresIn * 1000),
-      },
-      create: {
-        xId: xUser.id,
-        xUsername: xUser.username,
-        xDisplayName: xUser.name,
-        accessToken: encryptedAccessToken,
-        refreshToken: encryptedRefreshToken,
-        tokenExpiresAt: new Date(Date.now() + tokens.expiresIn * 1000),
-      },
-    });
+    let user;
+    try {
+      user = await prisma.user.upsert({
+        where: { xId: xUser.id },
+        update: {
+          xUsername: xUser.username,
+          xDisplayName: xUser.name,
+          accessToken: encryptedAccessToken,
+          refreshToken: encryptedRefreshToken,
+          tokenExpiresAt: new Date(Date.now() + tokens.expiresIn * 1000),
+        },
+        create: {
+          xId: xUser.id,
+          xUsername: xUser.username,
+          xDisplayName: xUser.name,
+          accessToken: encryptedAccessToken,
+          refreshToken: encryptedRefreshToken,
+          tokenExpiresAt: new Date(Date.now() + tokens.expiresIn * 1000),
+        },
+      });
+    } catch (e) {
+      console.error("Database upsert failed:", e);
+      return NextResponse.redirect(`${appUrl}/?error=db_failed`);
+    }
 
     // Clear OAuth cookies and redirect
     const response = NextResponse.redirect(`${appUrl}/dashboard`);
