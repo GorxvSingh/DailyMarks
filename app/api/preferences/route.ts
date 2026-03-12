@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
       xDisplayName: true,
       email: true,
       bookmarkCount: true,
+      digestTime: true,
       isActive: true,
       lastDigestAt: true,
       plan: true,
@@ -63,7 +64,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { email, bookmarkCount, isActive } = body;
+  const { email, bookmarkCount, isActive, digestTime } = body;
 
   // Validate bookmark count
   if (
@@ -91,16 +92,28 @@ export async function PUT(request: NextRequest) {
     }
   }
 
+  // Validate digestTime format (HH:MM)
+  if (digestTime !== undefined) {
+    if (typeof digestTime !== "string" || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(digestTime)) {
+      return NextResponse.json(
+        { error: "digestTime must be in HH:MM format (e.g., 08:00)" },
+        { status: 400 }
+      );
+    }
+  }
+
   const user = await prisma.user.update({
     where: { id: session.userId },
     data: {
       ...(email !== undefined && { email }),
       ...(bookmarkCount !== undefined && { bookmarkCount }),
       ...(isActive !== undefined && { isActive: Boolean(isActive) }),
+      ...(digestTime !== undefined && { digestTime }),
     },
     select: {
       email: true,
       bookmarkCount: true,
+      digestTime: true,
       isActive: true,
     },
   });

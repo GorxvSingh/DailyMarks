@@ -18,6 +18,7 @@ model User {
   refreshToken   String
   tokenExpiresAt DateTime
   bookmarkCount    Int       @default(5)
+  digestTime       String    @default("08:00")
   isActive         Boolean   @default(true)
   lastDigestAt     DateTime?
   stripeCustomerId String?
