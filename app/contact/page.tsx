@@ -97,10 +97,10 @@ export default function ContactPage() {
               <p className="text-sm text-accent">
                 Something went wrong. Please try again or email us directly at{" "}
                 <a
-                  href="mailto:support@dailymarks.app"
+                  href="mailto:support@dailymarks.online"
                   className="underline"
                 >
-                  support@dailymarks.app
+                  support@dailymarks.online
                 </a>
                 .
               </p>
@@ -116,10 +116,10 @@ export default function ContactPage() {
           <p className="text-sm text-muted">
             You can also email us directly at{" "}
             <a
-              href="mailto:support@dailymarks.app"
+              href="mailto:support@dailymarks.online"
               className="text-accent hover:underline"
             >
-              support@dailymarks.app
+              support@dailymarks.online
             </a>
           </p>
         </div>

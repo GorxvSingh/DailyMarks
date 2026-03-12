@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/db";
+import { rateLimit, getClientIP, rateLimitHeaders } from "@/lib/rate-limit";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit: 30 reads per minute
+  const ip = getClientIP(request);
+  const rl = rateLimit(`prefs-get:${ip}`, { limit: 30, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    );
   }
 
   const user = await prisma.user.findUnique({
@@ -35,7 +46,23 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
+  // Rate limit: 10 updates per minute
+  const ip = getClientIP(request);
+  const rl = rateLimit(`prefs-put:${ip}`, { limit: 10, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    );
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
   const { email, bookmarkCount, isActive } = body;
 
   // Validate bookmark count
@@ -52,7 +79,11 @@ export async function PUT(request: NextRequest) {
   // Validate email format if provided
   if (email !== undefined && email !== null) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (typeof email !== "string" || !emailRegex.test(email)) {
+    if (
+      typeof email !== "string" ||
+      email.length > 254 ||
+      !emailRegex.test(email)
+    ) {
       return NextResponse.json(
         { error: "Invalid email address" },
         { status: 400 }

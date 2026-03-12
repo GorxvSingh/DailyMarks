@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { createCheckoutSession, type PlanType } from "@/lib/stripe";
+import { rateLimit, getClientIP, rateLimitHeaders } from "@/lib/rate-limit";
 
 const VALID_PLANS: PlanType[] = ["monthly", "yearly", "lifetime"];
 
@@ -10,7 +11,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const body = await request.json();
+  // Rate limit: 5 checkout attempts per minute
+  const ip = getClientIP(request);
+  const rl = rateLimit(`checkout:${ip}`, { limit: 5, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    );
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
   const { plan } = body;
 
   if (!plan || !VALID_PLANS.includes(plan)) {

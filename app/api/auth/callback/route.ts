@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { exchangeCodeForToken, fetchXUser } from "@/lib/x-auth";
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/session";
+import { encrypt } from "@/lib/crypto";
+import { rateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,6 +12,13 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get("error");
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  // Rate limit: 10 callbacks per minute per IP
+  const ip = getClientIP(request);
+  const rl = rateLimit(`callback:${ip}`, { limit: 10, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.redirect(`${appUrl}/?error=rate_limited`);
+  }
 
   // Handle user denial
   if (error) {
@@ -35,22 +44,26 @@ export async function GET(request: NextRequest) {
     // Fetch user profile
     const xUser = await fetchXUser(tokens.accessToken);
 
+    // Encrypt tokens before storing
+    const encryptedAccessToken = encrypt(tokens.accessToken);
+    const encryptedRefreshToken = encrypt(tokens.refreshToken);
+
     // Upsert user in database
     const user = await prisma.user.upsert({
       where: { xId: xUser.id },
       update: {
         xUsername: xUser.username,
         xDisplayName: xUser.name,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
+        accessToken: encryptedAccessToken,
+        refreshToken: encryptedRefreshToken,
         tokenExpiresAt: new Date(Date.now() + tokens.expiresIn * 1000),
       },
       create: {
         xId: xUser.id,
         xUsername: xUser.username,
         xDisplayName: xUser.name,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
+        accessToken: encryptedAccessToken,
+        refreshToken: encryptedRefreshToken,
         tokenExpiresAt: new Date(Date.now() + tokens.expiresIn * 1000),
       },
     });

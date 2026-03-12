@@ -1,13 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/db";
 import { refreshAccessToken } from "@/lib/x-auth";
 import { fetchBookmarks } from "@/lib/x-api";
 import { sendDigestEmail } from "@/lib/email";
+import { rateLimit, getClientIP, rateLimitHeaders } from "@/lib/rate-limit";
+import { decrypt } from "@/lib/crypto";
+
+function safeCompare(a: string, b: string): boolean {
+  try {
+    const bufA = Buffer.from(a, "utf8");
+    const bufB = Buffer.from(b, "utf8");
+    if (bufA.length !== bufB.length) return false;
+    return timingSafeEqual(bufA, bufB);
+  } catch {
+    return false;
+  }
+}
 
 export async function GET(request: NextRequest) {
-  // Verify cron secret
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Rate limit: 2 requests per minute (cron shouldn't fire more often)
+  const ip = getClientIP(request);
+  const rl = rateLimit(`cron:${ip}`, { limit: 2, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    );
+  }
+
+  // Verify cron secret with timing-safe comparison
+  const authHeader = request.headers.get("authorization") || "";
+  const expected = `Bearer ${process.env.CRON_SECRET || ""}`;
+  if (!process.env.CRON_SECRET || !safeCompare(authHeader, expected)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -32,26 +57,37 @@ export async function GET(request: NextRequest) {
       // Skip if digest was already sent today
       if (user.lastDigestAt) {
         const lastDigest = new Date(user.lastDigestAt);
-        if (
-          lastDigest.toDateString() === now.toDateString()
-        ) {
+        if (lastDigest.toDateString() === now.toDateString()) {
           results.push({ userId: user.id, status: "skipped_already_sent" });
           continue;
         }
       }
 
+      // Decrypt tokens
+      let accessToken: string;
+      let refreshToken: string;
+      try {
+        accessToken = decrypt(user.accessToken);
+        refreshToken = decrypt(user.refreshToken);
+      } catch {
+        // Tokens may be stored in plaintext (pre-encryption migration)
+        accessToken = user.accessToken;
+        refreshToken = user.refreshToken;
+      }
+
       // Refresh token if expired
-      let accessToken = user.accessToken;
       if (new Date(user.tokenExpiresAt) <= now) {
         try {
-          const tokens = await refreshAccessToken(user.refreshToken);
+          const tokens = await refreshAccessToken(refreshToken);
           accessToken = tokens.accessToken;
 
+          // Import encrypt dynamically to avoid circular deps
+          const { encrypt } = await import("@/lib/crypto");
           await prisma.user.update({
             where: { id: user.id },
             data: {
-              accessToken: tokens.accessToken,
-              refreshToken: tokens.refreshToken,
+              accessToken: encrypt(tokens.accessToken),
+              refreshToken: encrypt(tokens.refreshToken),
               tokenExpiresAt: new Date(
                 Date.now() + tokens.expiresIn * 1000
               ),

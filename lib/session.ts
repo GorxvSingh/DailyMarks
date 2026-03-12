@@ -3,8 +3,13 @@ import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 
 const SESSION_COOKIE = "dm_session";
-const secret = () =>
-  new TextEncoder().encode(process.env.SESSION_SECRET || "dev-secret-change-me");
+const secret = () => {
+  const key = process.env.SESSION_SECRET;
+  if (!key && process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET environment variable is required in production");
+  }
+  return new TextEncoder().encode(key || "dev-secret-change-me");
+};
 
 export async function createSession(userId: string) {
   const token = await new SignJWT({ userId })

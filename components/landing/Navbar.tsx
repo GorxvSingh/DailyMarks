@@ -33,12 +33,6 @@ export function Navbar() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="#how-it-works"
-            className="hidden sm:block text-sm text-muted hover:text-foreground transition-colors"
-          >
-            How it works
-          </Link>
-          <Link
             href="/pricing"
             className="hidden sm:block text-sm text-muted hover:text-foreground transition-colors"
           >

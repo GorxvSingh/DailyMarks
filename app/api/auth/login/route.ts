@@ -1,7 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { generatePKCE, generateState, buildAuthUrl } from "@/lib/x-auth";
+import { rateLimit, getClientIP, rateLimitHeaders } from "@/lib/rate-limit";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Rate limit: 10 login attempts per minute per IP
+  const ip = getClientIP(request);
+  const rl = rateLimit(`login:${ip}`, { limit: 10, windowSeconds: 60 });
+  if (!rl.success) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    return NextResponse.redirect(`${appUrl}/?error=rate_limited`);
+  }
+
   const { codeVerifier, codeChallenge } = generatePKCE();
   const state = generateState();
 

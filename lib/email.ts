@@ -12,7 +12,7 @@ export async function sendDigestEmail(
   date: string
 ) {
   const { error } = await getResend().emails.send({
-    from: "DailyMarks <digest@dailymarks.app>",
+    from: "DailyMarks <support@dailymarks.online>",
     to,
     subject: `Your Daily Bookmarks - ${date}`,
     react: DigestEmail({ bookmarks, date }),

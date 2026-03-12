@@ -48,6 +48,13 @@ export default function PricingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),
       });
+
+      // Not logged in — redirect to sign in first
+      if (res.status === 401) {
+        window.location.href = "/api/auth/login";
+        return;
+      }
+
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
