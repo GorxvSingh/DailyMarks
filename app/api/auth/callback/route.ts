@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeCodeForToken, fetchXUser } from "@/lib/x-auth";
 import { prisma } from "@/lib/db";
-import { createSession } from "@/lib/session";
+import { createSessionOnResponse } from "@/lib/session";
 import { encrypt } from "@/lib/crypto";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
 
@@ -68,13 +68,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Create session
-    await createSession(user.id);
-
     // Clear OAuth cookies and redirect
     const response = NextResponse.redirect(`${appUrl}/dashboard`);
     response.cookies.delete("x_code_verifier");
     response.cookies.delete("x_oauth_state");
+
+    // Set session cookie directly on the redirect response
+    await createSessionOnResponse(user.id, response);
+
     return response;
   } catch (err) {
     console.error("OAuth callback error:", err);

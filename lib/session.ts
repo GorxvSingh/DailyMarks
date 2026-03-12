@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const SESSION_COOKIE = "dm_session";
 const secret = () => {
@@ -20,6 +20,26 @@ export async function createSession(userId: string) {
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 30,
+    path: "/",
+  });
+}
+
+/**
+ * Create a session and set the cookie directly on a NextResponse object.
+ * Use this in route handlers that return their own NextResponse (e.g. redirects).
+ */
+export async function createSessionOnResponse(userId: string, response: NextResponse) {
+  const token = await new SignJWT({ userId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("30d")
+    .setIssuedAt()
+    .sign(secret());
+
+  response.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
