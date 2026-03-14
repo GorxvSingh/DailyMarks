@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/Button";
+"use client";
+
 import { AnimateIn } from "@/components/ui/AnimateIn";
 
 export function CtaBanner() {
@@ -11,10 +12,18 @@ export function CtaBanner() {
               Ready to rediscover your bookmarks?
             </h2>
             <p className="text-muted max-w-[480px] mx-auto mb-8">
-              Pick a plan and start getting your saved content delivered to your
-              inbox every morning.
+              Join the waitlist and be the first to know when DailyMarks launches.
             </p>
-            <Button href="/pricing">See pricing</Button>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="inline-flex h-[44px] items-center px-6 rounded-lg font-medium bg-accent text-white hover:bg-accent-hover transition-colors"
+            >
+              Join the waitlist
+            </a>
           </div>
         </AnimateIn>
       </div>

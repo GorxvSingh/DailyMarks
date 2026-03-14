@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Logo } from "@/components/ui/Logo";
 
@@ -32,16 +31,7 @@ export function Navbar() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <Link
-            href="/pricing"
-            className="hidden sm:block text-sm text-muted hover:text-foreground transition-colors"
-          >
-            Pricing
-          </Link>
           <ThemeToggle />
-          <Button href="/api/auth/login" size="sm">
-            Sign in with X
-          </Button>
         </div>
       </div>
     </nav>
