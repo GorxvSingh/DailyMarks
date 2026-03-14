@@ -39,6 +39,14 @@ export function Button({
   const cls = `${base} ${variants[variant]} ${sizes[size]} ${className}`;
 
   if (href) {
+    // Use plain <a> for API routes to prevent Next.js prefetching
+    if (href.startsWith("/api/")) {
+      return (
+        <a href={href} className={cls}>
+          {children}
+        </a>
+      );
+    }
     return (
       <Link href={href} className={cls}>
         {children}
