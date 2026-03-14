@@ -64,6 +64,7 @@ export default function DashboardPage() {
   const [message, setMessage] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     // Detect browser timezone
@@ -162,13 +163,53 @@ export default function DashboardPage() {
             <Logo size={28} />
             Daily<span className="text-accent">Marks</span>
           </a>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted">
-              @{prefs.xUsername}
-            </span>
-            <Button href="/api/auth/logout" variant="ghost" size="sm">
-              Log out
-            </Button>
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-2 rounded-lg hover:bg-surface-light transition-colors"
+              aria-label="Menu"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="3" y1="5" x2="17" y2="5" />
+                <line x1="3" y1="10" x2="17" y2="10" />
+                <line x1="3" y1="15" x2="17" y2="15" />
+              </svg>
+            </button>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-2 w-52 rounded-lg border border-border bg-background shadow-lg z-50 py-1">
+                  <div className="px-4 py-2 border-b border-border">
+                    <p className="text-sm text-muted">@{prefs.xUsername}</p>
+                  </div>
+                  {hasPlan && prefs.plan !== "lifetime" && (
+                    <button
+                      onClick={async () => {
+                        setMenuOpen(false);
+                        try {
+                          const res = await fetch("/api/billing", { method: "POST" });
+                          const data = await res.json();
+                          if (data.url) {
+                            window.location.href = data.url;
+                          }
+                        } catch {
+                          // silently fail
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-light transition-colors"
+                    >
+                      Manage membership
+                    </button>
+                  )}
+                  <a
+                    href="/api/auth/logout"
+                    className="block px-4 py-2.5 text-sm hover:bg-surface-light transition-colors"
+                  >
+                    Log out
+                  </a>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </nav>
