@@ -10,6 +10,7 @@ interface UserPreferences {
   email: string | null;
   bookmarkCount: number;
   digestTime: string;
+  timezone: string;
   isActive: boolean;
   lastDigestAt: string | null;
   plan: string;
@@ -40,29 +41,35 @@ const PLANS = [
   },
 ];
 
-const TIME_OPTIONS = [
-  { value: "06:00", label: "6:00 AM" },
-  { value: "07:00", label: "7:00 AM" },
-  { value: "08:00", label: "8:00 AM" },
-  { value: "09:00", label: "9:00 AM" },
-  { value: "10:00", label: "10:00 AM" },
-  { value: "12:00", label: "12:00 PM" },
-  { value: "15:00", label: "3:00 PM" },
-  { value: "18:00", label: "6:00 PM" },
-  { value: "21:00", label: "9:00 PM" },
-];
+function formatHour(hour: number): string {
+  if (hour === 0) return "12:00 AM";
+  if (hour === 12) return "12:00 PM";
+  if (hour < 12) return `${hour}:00 AM`;
+  return `${hour - 12}:00 PM`;
+}
+
+const TIME_OPTIONS = Array.from({ length: 24 }, (_, i) => ({
+  value: `${String(i).padStart(2, "0")}:00`,
+  label: formatHour(i),
+}));
 
 export default function DashboardPage() {
   const [prefs, setPrefs] = useState<UserPreferences | null>(null);
   const [email, setEmail] = useState("");
   const [bookmarkCount, setBookmarkCount] = useState(5);
   const [digestTime, setDigestTime] = useState("08:00");
+  const [timezone, setTimezone] = useState("America/New_York");
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState("");
 
   useEffect(() => {
+    // Detect browser timezone
+    const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    setTimezone(detectedTz);
+
     fetch("/api/preferences")
       .then((r) => r.json())
       .then((data) => {
@@ -70,6 +77,7 @@ export default function DashboardPage() {
         setEmail(data.email || "");
         setBookmarkCount(data.bookmarkCount);
         setDigestTime(data.digestTime || "08:00");
+        setTimezone(data.timezone || detectedTz);
         setIsActive(data.isActive);
       })
       .catch(() => {
@@ -84,7 +92,7 @@ export default function DashboardPage() {
       const res = await fetch("/api/preferences", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, bookmarkCount, digestTime, isActive }),
+        body: JSON.stringify({ email, bookmarkCount, digestTime, timezone, isActive }),
       });
       if (res.ok) {
         setMessage("Preferences saved!");
@@ -100,6 +108,7 @@ export default function DashboardPage() {
 
   async function handleCheckout(plan: string) {
     setCheckoutLoading(plan);
+    setCheckoutError("");
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -114,7 +123,7 @@ export default function DashboardPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error || `Error ${res.status}: Something went wrong`);
+        setCheckoutError(data.error || `Error ${res.status}: Something went wrong`);
         setCheckoutLoading(null);
         return;
       }
@@ -123,10 +132,10 @@ export default function DashboardPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(data.error || "Something went wrong");
+        setCheckoutError(data.error || "Something went wrong");
       }
     } catch {
-      alert("Something went wrong. Please try again.");
+      setCheckoutError("Something went wrong. Please try again.");
     }
     setCheckoutLoading(null);
   }
@@ -140,6 +149,9 @@ export default function DashboardPage() {
   }
 
   const hasPlan = prefs.plan !== "free";
+  const detectedTz = typeof window !== "undefined"
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone
+    : "America/New_York";
 
   return (
     <div className="min-h-screen">
@@ -220,6 +232,9 @@ export default function DashboardPage() {
                 </button>
               ))}
             </div>
+            {checkoutError && (
+              <p className="mt-3 text-sm text-red-600">{checkoutError}</p>
+            )}
           </div>
         )}
 
@@ -277,7 +292,7 @@ export default function DashboardPage() {
             ))}
           </select>
           <p className="text-xs text-muted mt-1">
-            Choose when you&apos;d like to receive your daily digest.
+            Your timezone: {detectedTz}
           </p>
         </div>
 

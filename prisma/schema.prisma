@@ -19,6 +19,7 @@ model User {
   tokenExpiresAt DateTime
   bookmarkCount    Int       @default(5)
   digestTime       String    @default("08:00")
+  timezone         String    @default("America/New_York")
   isActive         Boolean   @default(true)
   lastDigestAt     DateTime?
   stripeCustomerId String?

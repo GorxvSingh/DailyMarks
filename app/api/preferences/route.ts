@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
       email: true,
       bookmarkCount: true,
       digestTime: true,
+      timezone: true,
       isActive: true,
       lastDigestAt: true,
       plan: true,
@@ -64,7 +65,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { email, bookmarkCount, isActive, digestTime } = body;
+  const { email, bookmarkCount, isActive, digestTime, timezone } = body;
 
   // Validate bookmark count
   if (
@@ -102,6 +103,16 @@ export async function PUT(request: NextRequest) {
     }
   }
 
+  // Validate timezone if provided
+  if (timezone !== undefined) {
+    if (typeof timezone !== "string" || timezone.length > 100) {
+      return NextResponse.json(
+        { error: "Invalid timezone" },
+        { status: 400 }
+      );
+    }
+  }
+
   const user = await prisma.user.update({
     where: { id: session.userId },
     data: {
@@ -109,11 +120,13 @@ export async function PUT(request: NextRequest) {
       ...(bookmarkCount !== undefined && { bookmarkCount }),
       ...(isActive !== undefined && { isActive: Boolean(isActive) }),
       ...(digestTime !== undefined && { digestTime }),
+      ...(timezone !== undefined && { timezone }),
     },
     select: {
       email: true,
       bookmarkCount: true,
       digestTime: true,
+      timezone: true,
       isActive: true,
     },
   });
